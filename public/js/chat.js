@@ -7,10 +7,12 @@ const $messageFormInput = document.getElementById('message-form-input');
 const $messageFormSend = document.getElementById('message-form-send');
 const $messages = document.getElementById('messages');
 const $locations = document.getElementById('locations');
+const $sidebar = document.getElementById('sidebar');
 
 // Templates
 const messageTemplate = document.getElementById('message-template').innerHTML;
 const locationTemplate = document.getElementById('location-template').innerHTML;
+const sidebarTemplate = document.getElementById('sidebar-template').innerHTML;
 
 $messageForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -61,18 +63,35 @@ socket.on('sendMessage', (data) => {
 socket.on('locationMessage', (location) => {
   console.log(location);
   const html = Mustache.render(locationTemplate, {
+    username: message.username,
     locationURL: location.url,
     createdAt: moment(location.createdAt).format('h:mm a')
   });
   $messages.insertAdjacentHTML('beforeend', html);
-})
+});
+
+socket.on('roomData', (({ room, users }) => {
+  const html = Mustache.render(sidebarTemplate, {
+    room,
+    users
+  });
+
+  $sidebar.innerHTML = html
+}));
 
 socket.on('message', (message) => {
   const html = Mustache.render(messageTemplate, {
+    username: message.username,
     message: message.text,
     createdAt: moment(message.createdAt).format('h:mm a')
   });
   $messages.insertAdjacentHTML('beforeend', html);
 });
 
-socket.emit('join', { username, room });
+socket.emit('join', { username, room }, (error) => {
+  if (error) {
+    alert(error);
+    // Jump back to the home directory
+    location.href = '/'
+  }
+});
