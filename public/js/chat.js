@@ -36,6 +36,30 @@ $messageForm.addEventListener('submit', (e) => {
 // Options
 const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true });
 
+const autoscroll = () => {
+  // New message element
+  const $newMessage = $messages.lastElementChild
+
+  // Height of the new message
+  const newMessageStyles = getComputedStyle($newMessage); // Gets the style of the given component
+  const newMessageMargin = parseInt(newMessageStyles.marginBottom);
+  const newMessageHeight = $newMessage.offsetHeight + newMessageMargin;
+
+  // Visible height
+  const visibleHeight = $messages.offsetHeight;
+
+  // Height of messages container
+  const containerHeight = $messages.scrollHeight;
+
+  // How far have I scrolled?
+  const scrollOffset = $messages.scrollTop + visibleHeight;
+
+  if (containerHeight - newMessageHeight <= scrollOffset) {
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+}
+
+
 $sendLocation.addEventListener('click', () => {
   if (!navigator.geolocation) {
     return alert('Geolocation is not supported by your browser');
@@ -51,13 +75,8 @@ $sendLocation.addEventListener('click', () => {
 
     socket.emit('sendLocation', coords, (message) => {
       $sendLocation.removeAttribute('disabled');
-      console.log(message);
     });
   });
-});
-
-socket.on('sendMessage', (data) => {
-  console.log(data);
 });
 
 socket.on('locationMessage', (location) => {
@@ -68,6 +87,7 @@ socket.on('locationMessage', (location) => {
     createdAt: moment(location.createdAt).format('h:mm a')
   });
   $messages.insertAdjacentHTML('beforeend', html);
+  autoscroll()
 });
 
 socket.on('roomData', (({ room, users }) => {
@@ -86,6 +106,7 @@ socket.on('message', (message) => {
     createdAt: moment(message.createdAt).format('h:mm a')
   });
   $messages.insertAdjacentHTML('beforeend', html);
+  autoscroll()
 });
 
 socket.emit('join', { username, room }, (error) => {
